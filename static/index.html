@@ -13,13 +13,12 @@
       <input type="text" id="username" placeholder="Uživatelské jméno" value="admin">
       <input type="password" id="password" placeholder="Heslo" value="jarvik2025">
     </div>
+    <select id="mode">
+      <option value="mistral" selected>Mistral</option>
+      <option value="gemma">Gemma</option>
+      <option value="search">Web</option>
+    </select>
     <textarea id="message" placeholder="Zeptej se Jarvika..."></textarea>
-
-    <div class="toggle-mode">
-      <label><input type="radio" name="mode" value="ask" checked> Mistral (lokální)</label>
-      <label><input type="radio" name="mode" value="search"> Web Search (agent)</label>
-    </div>
-
     <button onclick="sendMessage()">Odeslat</button>
     <pre id="response"></pre>
   </div>
@@ -29,14 +28,12 @@
       const username = document.getElementById("username").value;
       const password = document.getElementById("password").value;
       const message = document.getElementById("message").value;
-      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const mode = document.getElementById("mode").value;
 
-      const endpoint = mode === "search" ? "/search" : "/ask";
-
-      const res = await fetch(endpoint, {
+      const res = await fetch("/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, message })
+        body: JSON.stringify({ username, password, message, mode })
       });
 
       const data = await res.json();

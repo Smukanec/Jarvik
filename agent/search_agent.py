@@ -1,49 +1,19 @@
 import requests
 from bs4 import BeautifulSoup
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "tinyllama"
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0"
-}
-
-def duckduckgo_search(query):
-    url = f"https://html.duckduckgo.com/html/?q={query}"
-    res = requests.get(url, headers=HEADERS)
-    soup = BeautifulSoup(res.text, "html.parser")
-    links = soup.select(".result__url")
-    if links:
-        href = links[0].get("href")
-        return href
-    return None
-
-def fetch_page_text(url):
+def search_and_answer(query):
     try:
-        res = requests.get(url, headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(res.text, "html.parser")
-        texts = soup.find_all("p")
-        return "\n".join([p.get_text() for p in texts])[:4000]
-    except:
-        return ""
+        url = f"https://html.duckduckgo.com/html/?q={query.replace(" ", "+")}"
+        headers = {"User-Agent": "JarvikBot/1.0"}
+        response = requests.get(url, headers=headers, timeout=10)
 
-def ask_tinyllama(prompt):
-    payload = {
-        "model": OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False
-    }
-    res = requests.post(OLLAMA_URL, json=payload, timeout=30)
-    return res.json().get("response", "").strip()
-
-def search_and_answer(question):
-    print(f"Hledám odpověď na: {question}")
-    link = duckduckgo_search(question)
-    if not link:
-        return "Nepodařilo se najít žádný relevantní odkaz."
-    content = fetch_page_text(link)
-    if not content:
-        return f"Nepodařilo se načíst obsah stránky: {link}"
-    prompt = f"Odpověz na otázku: '{question}' na základě následujícího textu:\n\n{content}"
-    answer = ask_tinyllama(prompt)
-    return f"🔗 {link}\n\n📄 {answer}"
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, "html.parser")
+            results = soup.find_all("a", {"class": "result__a"}, limit=3)
+            summary = "
+".join([r.get_text(strip=True) for r in results])
+            return summary if summary else "Nic relevantního nebylo nalezeno."
+        else:
+            return "Web search selhal."
+    except Exception as e:
+        return f"Chyba při hledání: {str(e)}"
