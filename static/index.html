@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Jarvik</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <img src="https://assets.vibefactory.cz/jarvik-logo.png" alt="Jarvik logo" class="logo">
+    <h1>Jarvik</h1>
+    <div class="login">
+      <input type="text" id="username" placeholder="Uživatelské jméno" value="admin">
+      <input type="password" id="password" placeholder="Heslo" value="jarvik2025">
+    </div>
+    <textarea id="message" placeholder="Zeptej se Jarvika..."></textarea>
+
+    <div class="toggle-mode">
+      <label><input type="radio" name="mode" value="ask" checked> Mistral (lokální)</label>
+      <label><input type="radio" name="mode" value="search"> Web Search (agent)</label>
+    </div>
+
+    <button onclick="sendMessage()">Odeslat</button>
+    <pre id="response"></pre>
+  </div>
+
+  <script>
+    async function sendMessage() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      const message = document.getElementById("message").value;
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+
+      const endpoint = mode === "search" ? "/search" : "/ask";
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, message })
+      });
+
+      const data = await res.json();
+      document.getElementById("response").textContent = data.response || data.error;
+    }
+  </script>
+</body>
+</html>
