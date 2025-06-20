@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 import requests
 
 OLLAMA_HOST = "http://localhost:11434"
@@ -38,7 +38,6 @@ def chat():
 def start():
     data = request.get_json()
     model = data.get("model")
-    # Načte model (pull, pokud není) – Ollama API to zvládne samo
     try:
         res = requests.post(f"{OLLAMA_HOST}/api/show", json={"name": model})
         if res.status_code != 200:
@@ -52,4 +51,4 @@ def stop():
     return jsonify({"status": "stop ignorováno – Ollama API běží stále"})
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8010)
