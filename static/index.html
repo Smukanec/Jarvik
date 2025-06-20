@@ -1,90 +1,72 @@
+
 <!DOCTYPE html>
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jarvik Chat</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background: #121212;
-      color: #eee;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    #output {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1em;
-    }
-    form {
-      display: flex;
-      flex-wrap: wrap;
-      background: #1e1e1e;
-      padding: 0.5em;
-      gap: 0.5em;
-    }
-    input, select {
-      padding: 0.5em;
-      font-size: 1em;
-      border: none;
-      border-radius: 5px;
-    }
-    #message {
-      flex: 1;
-    }
-    button {
-      background: #00a86b;
-      color: white;
-      border: none;
-      padding: 0.5em 1em;
-      border-radius: 5px;
-      font-size: 1em;
-    }
-    div {
-      margin-bottom: 0.5em;
-    }
+    body { background-color: black; color: green; font-family: monospace; padding: 1em; }
+    select, input, button { margin: 0.5em 0; background: black; color: green; border: 1px solid green; }
+    #spinner { display: none; }
   </style>
 </head>
 <body>
-  <div style="padding: 0.5em; background: #1e1e1e;">
-    Model:
+  <h1>🧠 Jarvik Chat</h1>
+  <label>Model:
     <select id="model">
-      <option value="mistral-openorca:7b" selected>Mistral</option>
-      <option value="gemma:2b">Gemma</option>
-      <option value="tinyllama:latest">TinyLlama</option>
+      <option value="mistral">Mistral</option>
+      <option value="gemma">Gemma</option>
+      <option value="tinyllama">TinyLlama</option>
     </select>
-    Uživatel:
-    <input id="password" placeholder="např. jiri nebo public" />
-    <button onclick="location.reload()">🔄</button>
-  </div>
-  <div id="output"></div>
-  <form>
-    <input id="message" autocomplete="off" placeholder="Zeptej se Jarvika…" />
-    <button>➤</button>
-  </form>
+  </label>
+  <br />
+  <label>Heslo: <input type="password" id="password" /></label><br />
+  <textarea id="message" rows="4" cols="60" placeholder="Zadej dotaz..."></textarea><br />
+  <button>Odeslat</button> <span id="spinner">🔄</span>
+  <div id="output" style="margin-top:1em;"></div>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const form = document.querySelector('form');
+      const form = document.querySelector('button');
       const input = document.querySelector('#message');
       const output = document.querySelector('#output');
       const modelSelect = document.querySelector('#model');
       const passwordInput = document.querySelector('#password');
-      const history = JSON.parse(sessionStorage.getItem('chatHistory') || '[]');
+      const spinner = document.querySelector('#spinner');
 
+      const history = JSON.parse(sessionStorage.getItem('chatHistory') || '[]');
       history.forEach(msg => {
         const div = document.createElement('div');
         div.innerHTML = `<b>${msg.role}</b>: ${msg.content}`;
         output.appendChild(div);
       });
 
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+      async function startModel(model) {
+        spinner.style.display = 'inline-block';
+        await fetch('/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model })
+        });
+        spinner.style.display = 'none';
+      }
+
+      modelSelect.addEventListener('change', async (e) => {
+        const selected = e.target.value;
+        for (const model of ['mistral', 'gemma', 'tinyllama']) {
+          if (model !== selected) {
+            await fetch('/stop', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ model })
+            });
+          }
+        }
+        await startModel(selected);
+      });
+
+      form.addEventListener('click', async () => {
         const userInput = input.value.trim();
         if (!userInput) return;
-
         const user = passwordInput.value.trim();
         const model = modelSelect.value;
 
@@ -104,11 +86,10 @@
         const botDiv = document.createElement('div');
         botDiv.innerHTML = `<b>Jarvik</b>: ${data.response}`;
         output.appendChild(botDiv);
-        output.scrollTop = output.scrollHeight;
 
-        history.push({ role: 'Ty', content: userInput });
-        history.push({ role: 'Jarvik', content: data.response });
+        history.push({ role: "Ty", content: userInput }, { role: "Jarvik", content: data.response });
         sessionStorage.setItem('chatHistory', JSON.stringify(history));
+        output.scrollTop = output.scrollHeight;
       });
     });
   </script>
